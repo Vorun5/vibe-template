@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --container-8xl: 88rem;
+  --container-9xl: 96rem;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --color-app: var(--bg-app);
+  --color-text-base: var(--text-base);
+  --color-text-base-muted: var(--text-base-muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-secondary-text: var(--secondary-text);
+  --color-surface: var(--bg-surface);
+  --color-surface-muted: var(--bg-surface-muted);
+  --color-border: var(--border);
+}
+
+/* TODO: replace these with your brand colors. The two knobs that matter most
+   are --primary (links, CTAs) and --secondary (accents). */
+:root {
+  --bg-app: oklch(97.9% 0.009 292.3);
+  --text-base: #0f1419;
+  --text-base-muted: #536471;
+  --primary: #1d9bf0;        /* TODO brand color */
+  --secondary: #6b7280;      /* TODO brand color */
+  --secondary-text: #374151; /* TODO brand color */
+  --bg-surface: #fff;
+  --bg-surface-muted: #f7f7f7;
+  --border: #eff3f4;
+}
+
+html.dark {
+  --bg-app: #000;
+  --text-base: #e7e9ea;
+  --text-base-muted: #71767b;
+  --primary: #1d9bf0;        /* TODO brand color */
+  --secondary: #1f2937;      /* TODO brand color */
+  --secondary-text: #9ca3af; /* TODO brand color */
+  --bg-surface: #000;
+  --bg-surface-muted: #080808;
+  --border: #2f3336;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg-app: #000;
+    --text-base: #e7e9ea;
+    --text-base-muted: #71767b;
+    --primary: #1d9bf0;
+    --secondary: #1f2937;
+    --secondary-text: #9ca3af;
+    --bg-surface: #000;
+    --bg-surface-muted: #080808;
+    --border: #2f3336;
+  }
+}
+
+*,
+html,
+body {
+  border-color: var(--border);
+}
+
+html {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-app);
+  background-attachment: fixed;
+  color: var(--color-text-base);
+  min-height: 100vh;
+}
+
+/* iOS Safari auto-zooms on inputs with computed font-size < 16px when focused.
+   Force at least 16px on touch screens to disable that zoom without breaking
+   desktop typography. DO NOT REMOVE — this is a load-bearing UX fix. */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@layer base {
+  a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  a:hover {
+    opacity: 0.85;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dropdown animation (used by SearchBar) */
+.dropdown-enter {
+  animation: dropdownFade 0.15s ease-out;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

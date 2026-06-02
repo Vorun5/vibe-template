@@ -1,0 +1,42 @@
+{
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/docker-compose.dev.yml": {
+    "mtime": 1780265135.880797,
+    "hash": "3880b2b4f6fb784b392d21f065896676"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/README.md": {
+    "mtime": 1780265269.1986413,
+    "hash": "9cf4542a2afaf8a201a9dc1ac8409f41"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/docker-compose.yml": {
+    "mtime": 1780265129.8059342,
+    "hash": "cfcece5afd0e62cd9022691aef644a40"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/CLAUDE.md": {
+    "mtime": 1780265294.649763,
+    "hash": "561bc92f6d7cb03e66fff618b43457e2"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/loki/loki-config.yml": {
+    "mtime": 1780265051.5286536,
+    "hash": "c5cd280a94479d84ad1ab349264d73a9"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/promtail/promtail-config.yml": {
+    "mtime": 1780265057.1301503,
+    "hash": "293fdc13ba8d91f9be653b39fd094c2c"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/grafana/provisioning/datasources/datasources.yml": {
+    "mtime": 1780265060.0819204,
+    "hash": "38f8b7b3ebb9775c3430643d42a8c4cd"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/grafana/provisioning/dashboards/dashboards.yml": {
+    "mtime": 1780265062.6619725,
+    "hash": "d57a82e79258375b3253a77a0625a3b7"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/prometheus/prometheus.stack.yml": {
+    "mtime": 1780265180.7181823,
+    "hash": "30064aa9776261ddac06d006f603b893"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/monitoring-template/prometheus/prometheus.yml": {
+    "mtime": 1780265045.576459,
+    "hash": "0727ce0797df8e8221e36f4a02827130"
+  }
+}

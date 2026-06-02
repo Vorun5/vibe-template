@@ -1,0 +1,35 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    # By default we collect stdout/stderr from EVERY container on the
+    # host. The `container_name` becomes the `job` label so LogQL can
+    # filter as `{job="<your-container>"}`.
+    #
+    # TIP: if you only want logs from your own app's containers (no
+    # noise from postgres, redis, etc.), uncomment the `keep` action
+    # below and replace `myapp` with your APP_NAME.
+    relabel_configs:
+      # - source_labels: ["__meta_docker_container_name"]
+      #   regex: "/?(myapp-.+)"
+      #   action: keep
+
+      - source_labels: ["__meta_docker_container_name"]
+        target_label: "container"
+        regex: "/?(.*)"
+
+      - source_labels: ["__meta_docker_container_name"]
+        target_label: "job"
+        regex: "/?(.*)"

@@ -1,0 +1,40 @@
+# Dev override: stock upstream images + bind-mounted configs.
+#
+# Use this when iterating locally on prometheus.yml / loki-config.yml /
+# promtail-config.yml / dashboards — changes pick up without a rebuild
+# (Prometheus needs a `curl -X POST http://localhost:9090/-/reload`,
+# Grafana picks up new dashboards on file change, Loki + Promtail need a
+# container restart).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    build: null
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    build: null
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+
+  loki:
+    image: grafana/loki:latest
+    build: null
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+
+  promtail:
+    image: grafana/promtail:latest
+    build: null
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro

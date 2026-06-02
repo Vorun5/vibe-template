@@ -1,0 +1,196 @@
+---
+import Logo from "@/components/Logo.astro";
+import HeaderNav from "@/components/HeaderNav.astro";
+import { cn } from "@/lib/utils";
+import { SITE_URL } from "@/lib/api";
+
+const SITE_NAME = import.meta.env.PUBLIC_SITE_NAME || "Web Template";
+const SITE_DESC =
+  import.meta.env.PUBLIC_SITE_DESCRIPTION ||
+  "A starter Astro SSR application.";
+const OG_DEFAULT = import.meta.env.PUBLIC_OG_IMAGE || "/og-default.png";
+const GA_ID = import.meta.env.PUBLIC_GA_ID || "";
+
+interface Props {
+  title: string;
+  description?: string;
+  mainCn?: string;
+  keywords?: string;
+  noindex?: boolean;
+  ogImage?: string;
+  ogImageAlt?: string;
+  ogType?: string;
+  twitterCard?: "summary" | "summary_large_image";
+  canonical?: string;
+}
+
+const {
+  title,
+  description = SITE_DESC,
+  mainCn,
+  keywords,
+  noindex = false,
+  ogImage,
+  ogImageAlt = SITE_NAME,
+  ogType = "website",
+  twitterCard = "summary",
+  canonical,
+} = Astro.props;
+
+const hasOrderParam = Astro.url.searchParams.has("order");
+const hasSearchParam = Astro.url.searchParams.has("q");
+const canonicalURL = canonical ?? `${SITE_URL}${Astro.url.pathname}`;
+const ogImageURL = ogImage ?? `${SITE_URL}${OG_DEFAULT}`;
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESC,
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    {keywords && <meta name="keywords" content={keywords} />}
+    {
+      noindex || hasOrderParam || hasSearchParam ? (
+        <meta name="robots" content="noindex, follow" />
+      ) : (
+        <meta name="robots" content="index, follow" />
+      )
+    }
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Favicon: replace public/favicon.svg with your own assets -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta name="theme-color" content="#1d9bf0" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:alt" content={ogImageAlt} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+
+    <!-- JSON-LD -->
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(websiteSchema)}
+    />
+
+    <link
+      rel="preconnect"
+      href={import.meta.env.PUBLIC_STATIC_URL || ""}
+      crossorigin
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title}</title>
+
+    <slot name="head" />
+
+    <!-- No-flash theme switcher: runs before render so dark/light is set
+         before the first paint. -->
+    <script is:inline>
+      const saved = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.add("light");
+      }
+    </script>
+
+    {
+      /* Google Analytics — emitted only when PUBLIC_GA_ID is set. The CSP
+         middleware adds the matching origins automatically when GA is on. */
+    }
+    {
+      GA_ID && (
+        <>
+          <script
+            is:inline
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          />
+          <script is:inline set:html={`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){ dataLayer.push(arguments); }
+            gtag("js", new Date());
+            gtag("config", "${GA_ID}");
+          `} />
+        </>
+      )
+    }
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <header
+      class="h-12 md:h-15 sticky top-0 z-50 bg-surface/85 backdrop-blur-md border-b"
+    >
+      <nav
+        class="max-w-9xl px-3 md:px-6 py-2 md:py-4 mx-auto h-12 md:h-15 flex items-center justify-between gap-3"
+      >
+        <a
+          href="/"
+          aria-label={`${SITE_NAME} — home`}
+          class="flex items-center gap-2 shrink-0 no-underline"
+        >
+          <Logo size="md" class="hidden md:block" />
+          <Logo size="sm" class="md:hidden" />
+          <span class="hidden lg:block text-xl text-text-base!">
+            {SITE_NAME}
+          </span>
+        </a>
+
+        <div class="flex-1 max-w-md mx-auto">
+          <div id="header-search-slot"></div>
+        </div>
+
+        <HeaderNav />
+      </nav>
+    </header>
+
+    <main
+      class={cn(
+        "flex-1 max-w-9xl mx-auto w-full py-4 px-2 sm:px-6 min-h-[calc(100dvh-114px)]",
+        mainCn,
+      )}
+    >
+      <slot />
+    </main>
+
+    <footer class="border-t bg-surface mt-auto">
+      <div
+        class="max-w-5xl mx-auto px-4 py-6 text-text-base-muted text-sm flex items-center justify-between"
+      >
+        <span>© {new Date().getFullYear()} {SITE_NAME}</span>
+        <span>Built with Astro</span>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  @import "../styles/global.css";
+</style>

@@ -1,0 +1,130 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Pagination from "@/components/Pagination.astro";
+import SearchBar from "@/components/react/SearchBar";
+import {
+  getItems,
+  getClientIp,
+  SITE_URL,
+  RateLimitError,
+  ForbiddenError,
+  type ItemListItem,
+} from "@/lib/api";
+
+const SITE_NAME = import.meta.env.PUBLIC_SITE_NAME || "Web Template";
+
+const clientIp = getClientIp(Astro);
+const url = Astro.url;
+const pageParam = url.searchParams.get("page");
+const page = Math.max(0, (Number(pageParam) || 1) - 1);
+const limit = 20;
+
+let items: ItemListItem[] = [];
+let total = 0;
+let totalPages = 0;
+let apiDown = false;
+
+try {
+  const data = await getItems({ page, limit }, clientIp);
+  items = data.list;
+  total = data.total;
+  totalPages = data.totalPages;
+} catch (e) {
+  if (e instanceof RateLimitError) {
+    return Astro.redirect(`/rate-limited?retry=${e.retryAfter}`);
+  }
+  if (e instanceof ForbiddenError) {
+    return Astro.redirect("/forbidden");
+  }
+  // Graceful fallback when API is unreachable — the template should still
+  // render so a developer can boot the project before wiring up the backend.
+  apiDown = true;
+}
+
+if (pageParam && page >= totalPages && totalPages > 0) {
+  return new Response(null, { status: 404 });
+}
+
+const currentPageNum = page + 1;
+const isFirstPage = page === 0;
+const pageSuffix = currentPageNum > 1 ? ` — page ${currentPageNum}` : "";
+const pageTitle = `${SITE_NAME}${pageSuffix}`;
+const pageDescription = isFirstPage
+  ? `${SITE_NAME} — browse items.`
+  : `${SITE_NAME} — page ${currentPageNum}.`;
+
+const canonicalUrl =
+  currentPageNum > 1 ? `${SITE_URL}/?page=${currentPageNum}` : `${SITE_URL}/`;
+const noindex = currentPageNum > 1;
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDescription}
+  canonical={canonicalUrl}
+  noindex={noindex}
+>
+  {/* Move the React island into the header search slot after hydration. */}
+  <script>
+    const slot = document.getElementById("header-search-slot");
+    const search = document.getElementById("search-bar-source");
+    if (slot && search) {
+      slot.appendChild(search);
+      (search as HTMLElement).style.display = "block";
+    }
+  </script>
+  <div id="search-bar-source" style="display:none">
+    <SearchBar client:load />
+  </div>
+
+  <h1 class="text-lg font-semibold text-text-base mb-3">Items</h1>
+
+  {
+    apiDown && (
+      <div class="mb-5 px-4 py-3 rounded-md bg-surface border text-sm">
+        <p class="text-text-base font-medium mb-1">
+          The API at <code>API_URL</code> isn't reachable yet.
+        </p>
+        <p class="text-text-base-muted">
+          Start your backend and refresh — the page will fill with items.
+        </p>
+      </div>
+    )
+  }
+
+  {
+    !apiDown && items.length === 0 ? (
+      <div class="text-center py-16 rounded-lg bg-surface border">
+        <p class="text-text-base-muted">No items yet.</p>
+      </div>
+    ) : (
+      <>
+        <p class="text-sm text-text-base-muted mb-3">
+          <span class="font-semibold text-primary!">{total.toLocaleString()}</span>{" "}
+          items
+        </p>
+
+        <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {items.map((item) => (
+            <li class="bg-surface border rounded-md p-4 hover:border-primary transition-colors">
+              <a href={`/items/${item.slug}`} class="no-underline block">
+                <h2 class="text-base font-medium text-text-base mb-1">
+                  {item.name}
+                </h2>
+                <p class="text-xs text-text-base-muted">
+                  {item.views.toLocaleString()} views
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          baseUrl={url.pathname}
+        />
+      </>
+    )
+  }
+</Layout>

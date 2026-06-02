@@ -1,0 +1,214 @@
+# Shared compose file that boots the full template stack end-to-end:
+#
+#   postgres ─► server-template (port 3000, /metrics + /api/v1/items)
+#                 ▲
+#                 │ scraped via docker_sd
+#   web-template (port 4321) ─► server                  monitoring-template
+#                 │ stdout                                ┌──────────────┐
+#                 └──────────────────────────────────────►│  Promtail    │──► Loki :3100
+#                                                        │  Prometheus  │──► Grafana :3001
+#                                                        │  Node Export │
+#                                                        │  PG Exporter │──► postgres
+#                                                        └──────────────┘
+#
+# Container naming convention: ${PROJECT_NAME}-{server,web,postgres,...}.
+# The monitoring stack's docker_sd matches that pattern, so adding more
+# services that follow it auto-scrapes them with no Prometheus config
+# change.
+#
+# Usage:
+#   cp .env.example .env        # set GF_SECURITY_ADMIN_PASSWORD
+#   docker compose up -d --build
+#   docker compose run --rm seed
+#
+# Open:
+#   http://localhost:4321  — web-template (items list)
+#   http://localhost:3000  — server-template API (/metrics, /api/v1/items)
+#   http://localhost:3001  — Grafana (admin / GF_SECURITY_ADMIN_PASSWORD)
+#   http://localhost:9090  — Prometheus
+
+services:
+  # ─────────────────── App data tier ───────────────────
+  postgres:
+    image: postgres:16
+    container_name: ${PROJECT_NAME:-template}-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: server_template
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d server_template"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ─────────────────── App: server ───────────────────
+  # One-shot init container: creates the `items` table (if missing) and
+  # upserts demo rows. Runs every `docker compose up` but is idempotent
+  # (ON CONFLICT DO NOTHING on the slug unique constraint). The `server`
+  # depends on this finishing successfully, so the API can never start
+  # against an un-migrated DB.
+  #
+  # In a real production deploy you'd replace this with proper migrations
+  # (drizzle-kit migrate) and drop the demo rows.
+  seed:
+    build:
+      context: ./server-template
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-template}-seed
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/server_template
+    command: ["bun", "run", "src/db/seed.ts"]
+    restart: "no"
+
+  server:
+    build:
+      context: ./server-template
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-template}-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/server_template
+      PORT: "3000"
+      DATA_ROOT: /app/data
+      INTERNAL_API_SECRET: change-me-in-prod
+      INTERNAL_ALLOWED_IPS: 127.0.0.1,::1,::ffff:127.0.0.1
+      LOKI_APP_NAME: server
+      LOKI_URL: http://loki:3100
+      RATE_LIMIT_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  # ─────────────────── App: web ───────────────────
+  web:
+    build:
+      context: ./web-template
+      dockerfile: Dockerfile
+      args:
+        API_URL: http://server:3000
+        API_VERSION: v1
+        PUBLIC_API_URL: http://localhost:3000
+        PUBLIC_API_VERSION: v1
+        PUBLIC_STATIC_URL: http://localhost:3000
+        PUBLIC_SITE_URL: http://localhost:4321
+        PUBLIC_SITE_NAME: Template Demo
+        PUBLIC_SITE_DESCRIPTION: server-template + web-template running together.
+        PUBLIC_OG_IMAGE: /favicon.svg
+    container_name: ${PROJECT_NAME:-template}-web
+    depends_on:
+      - server
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4321"
+      API_URL: http://server:3000
+      API_VERSION: v1
+      LOKI_APP_NAME: web
+      LOKI_URL: http://loki:3100
+      TRUSTED_PROXIES: 127.0.0.1,::1,::ffff:127.0.0.1
+      RATE_LIMIT_WEB_ENABLED: "false"
+    ports:
+      - "4321:4321"
+    restart: unless-stopped
+
+  # ─────────────────── Observability ───────────────────
+  prometheus:
+    build: ./monitoring-template/prometheus
+    container_name: ${PROJECT_NAME:-template}-prometheus
+    restart: unless-stopped
+    user: root
+    ports:
+      - "${PROMETHEUS_HOST_PORT:-9090}:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Override the in-image config with one tuned for this stack:
+      # docker_sd matches `${PROJECT_NAME}-server` containers and scrapes
+      # them on port 3000.
+      - ./monitoring-template/prometheus/prometheus.stack.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-10GB}"
+      - "--web.enable-lifecycle"
+
+  grafana:
+    build: ./monitoring-template/grafana
+    container_name: ${PROJECT_NAME:-template}-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_HOST_PORT:-3001}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:?GF_SECURITY_ADMIN_PASSWORD is required — set it in .env}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    build: ./monitoring-template/loki
+    container_name: ${PROJECT_NAME:-template}-loki
+    restart: unless-stopped
+    ports:
+      - "${LOKI_HOST_PORT:-3100}:3100"
+    volumes:
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    build: ./monitoring-template/promtail
+    container_name: ${PROJECT_NAME:-template}-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: ${PROJECT_NAME:-template}-node-exporter
+    restart: unless-stopped
+    ports:
+      - "${NODE_EXPORTER_HOST_PORT:-9100}:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: ${PROJECT_NAME:-template}-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_EXPORTER_HOST_PORT:-9187}:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/server_template?sslmode=disable
+    depends_on:
+      - postgres
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:

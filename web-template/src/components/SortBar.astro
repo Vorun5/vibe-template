@@ -1,0 +1,143 @@
+---
+/**
+ * Generic sort bar. Pass the list of allowed sort fields as `options`.
+ * Toggles asc/desc when the same field is clicked twice, otherwise switches
+ * to the new field with desc by default.
+ */
+interface SortOption {
+  sort: string;
+  label: string;
+}
+
+interface Props {
+  currentSort?: string;
+  currentOrder?: string;
+  total: number;
+  baseUrl: string;
+  preserveParams?: Record<string, string>;
+  options: SortOption[];
+  totalLabel?: string;
+}
+
+const {
+  currentSort,
+  currentOrder,
+  total,
+  baseUrl,
+  preserveParams = {},
+  options,
+  totalLabel = "results",
+} = Astro.props;
+
+const buildUrl = (sort: string, order: string) => {
+  const url = new URL(baseUrl, "http://localhost");
+  for (const [key, value] of Object.entries(preserveParams)) {
+    if (value) url.searchParams.set(key, value);
+  }
+  url.searchParams.set("sort", sort);
+  url.searchParams.set("order", order);
+  url.searchParams.delete("page");
+  return url.pathname + url.search;
+};
+
+const isActiveSort = (sort: string) => currentSort === sort;
+
+const toggleUrl = (sort: string) => {
+  if (currentSort === sort) {
+    return buildUrl(sort, currentOrder === "desc" ? "asc" : "desc");
+  }
+  return buildUrl(sort, "desc");
+};
+
+const isDesc = (sort: string) => isActiveSort(sort) && currentOrder === "desc";
+
+const hasActiveFilter = !!currentSort;
+
+const clearUrl = (() => {
+  const url = new URL(baseUrl, "http://localhost");
+  for (const [key, value] of Object.entries(preserveParams)) {
+    if (value) url.searchParams.set(key, value);
+  }
+  url.searchParams.delete("sort");
+  url.searchParams.delete("order");
+  url.searchParams.delete("page");
+  return url.pathname + url.search;
+})();
+
+const arrowClass = (sort: string) => {
+  const active = isActiveSort(sort);
+  const desc = isDesc(sort);
+  if (!active) return "";
+  return desc ? "group-hover:rotate-180" : "rotate-180 group-hover:rotate-0";
+};
+---
+
+<div
+  class="flex flex-wrap flex-row items-start sm:items-center justify-between gap-2 mb-3 sm:mb-5"
+>
+  <p class="text-sm text-text-base!">
+    <span class="font-semibold text-primary!">{total.toLocaleString()}</span>
+    {totalLabel}
+  </p>
+
+  <div
+    class="flex flex-col sm:flex-row sm:inline-flex sm:items-center gap-0 sm:gap-1 p-1 rounded-none sm:rounded-md bg-surface"
+  >
+    {
+      hasActiveFilter && (
+        <a
+          href={clearUrl}
+          rel="nofollow"
+          aria-label="Clear sort"
+          class="flex py-2 gap-0.5 px-2 sm:px-0 sm:py-0 sm:inline-flex justify-left xs:justify-center items-center rounded-none sm:rounded-sm hover:bg-surface-muted text-red-500! hover:text-red-400! sm:w-6 sm:h-6"
+        >
+          <span class="text-xs sm:hidden">Clear</span>
+          <svg
+            class="w-3 h-3 sm:w-4 sm:h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </a>
+      )
+    }
+    {
+      options.map(({ sort, label }) => (
+        <a
+          href={toggleUrl(sort)}
+          rel="nofollow"
+          aria-label={`${label}${isActiveSort(sort) ? ", active" : ""}`}
+          class={`group inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-medium rounded-none sm:rounded-sm no-underline transition-all whitespace-nowrap ${
+            isActiveSort(sort)
+              ? "bg-primary text-white!"
+              : "text-primary! hover:bg-surface-muted"
+          }`}
+        >
+          {label}
+          <svg
+            class={`w-3 h-3 transition-transform duration-200 ${arrowClass(sort)}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </a>
+      ))
+    }
+  </div>
+</div>

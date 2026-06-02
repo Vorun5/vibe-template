@@ -1,0 +1,535 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Connections",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "id": 1,
+      "title": "Connections by State",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pg_stat_activity_count",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "id": 2,
+      "title": "Total Connections vs Max",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(pg_stat_activity_count)",
+          "legendFormat": "Active",
+          "refId": "A"
+        },
+        {
+          "expr": "pg_settings_max_connections",
+          "legendFormat": "Max Allowed",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "id": 3,
+      "title": "Connection Usage %",
+      "type": "gauge",
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "expr": "sum(pg_stat_activity_count) / pg_settings_max_connections",
+          "legendFormat": "Usage",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "Throughput",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "id": 4,
+      "title": "Transactions per Second",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(pg_stat_database_xact_commit{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Commits",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(pg_stat_database_xact_rollback{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Rollbacks",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "id": 5,
+      "title": "Rows Operations per Second",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(pg_stat_database_tup_fetched{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Fetched (SELECT)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(pg_stat_database_tup_inserted{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Inserted",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(pg_stat_database_tup_updated{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Updated",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(pg_stat_database_tup_deleted{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Deleted",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(rate(pg_stat_database_tup_returned{datname=\"freebusta\"}[5m]))",
+          "legendFormat": "Returned (scanned)",
+          "refId": "E"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 102,
+      "title": "Cache & Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.9 },
+              { "color": "green", "value": 0.99 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 19 },
+      "id": 6,
+      "title": "Cache Hit Ratio",
+      "type": "gauge",
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "expr": "pg_stat_database_blks_hit{datname=\"freebusta\"} / (pg_stat_database_blks_hit{datname=\"freebusta\"} + pg_stat_database_blks_read{datname=\"freebusta\"})",
+          "legendFormat": "Cache Hit Ratio",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 19 },
+      "id": 7,
+      "title": "Block Reads vs Cache Hits",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_blks_hit{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Cache Hits",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_stat_database_blks_read{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Disk Reads",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
+      "id": 8,
+      "title": "Temp Files & Bytes",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_temp_files{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Temp Files/s",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_stat_database_temp_bytes{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Temp Bytes/s",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "id": 103,
+      "title": "Database Size",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5368709120 },
+              { "color": "red", "value": 10737418240 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
+      "id": 9,
+      "title": "Database Size",
+      "type": "stat",
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "pg_database_size_bytes{datname=\"freebusta\"}",
+          "legendFormat": "freebusta",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 28 },
+      "id": 10,
+      "title": "Database Size Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pg_database_size_bytes{datname=\"freebusta\"}",
+          "legendFormat": "freebusta",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "id": 104,
+      "title": "Locks & Conflicts",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
+      "id": 11,
+      "title": "Locks by Mode",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pg_locks_count",
+          "legendFormat": "{{mode}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+      "id": 12,
+      "title": "Conflicts & Deadlocks",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_conflicts{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Conflicts/s",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_stat_database_deadlocks{datname=\"freebusta\"}[5m])",
+          "legendFormat": "Deadlocks/s",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
+      "id": 105,
+      "title": "Tables (Top)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
+      "id": 13,
+      "title": "Live Rows per Table (Top 10)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, pg_stat_user_tables_n_live_tup)",
+          "legendFormat": "{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 46 },
+      "id": 14,
+      "title": "Dead Rows per Table (Top 10)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, pg_stat_user_tables_n_dead_tup)",
+          "legendFormat": "{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 54 },
+      "id": 15,
+      "title": "Sequential Scans per Table",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, rate(pg_stat_user_tables_seq_scan[5m]))",
+          "legendFormat": "{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 54 },
+      "id": 16,
+      "title": "Index Scans per Table",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, rate(pg_stat_user_tables_idx_scan[5m]))",
+          "legendFormat": "{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 },
+      "id": 106,
+      "title": "WAL & Replication",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 63 },
+      "id": 17,
+      "title": "WAL Size",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pg_stat_wal_wal_bytes",
+          "legendFormat": "WAL Bytes",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 63 },
+      "id": 18,
+      "title": "Checkpoints",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_bgwriter_checkpoints_timed_total[5m])",
+          "legendFormat": "Timed",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_stat_bgwriter_checkpoints_req_total[5m])",
+          "legendFormat": "Requested",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["freebusta", "postgresql"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PostgreSQL Database",
+  "uid": "postgresql-db",
+  "version": 1
+}

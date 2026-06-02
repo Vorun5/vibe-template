@@ -1,0 +1,66 @@
+---
+const btnClass =
+  "block bg-primary text-white! px-2 py-1 text-md font-medium rounded-[1px] hover:rounded-lg transition-[border-radius] duration-150";
+---
+
+<div class="flex items-center gap-2 shrink-0">
+  <a href="/" class="no-underline"><span class={btnClass}>Home</span></a>
+
+  <button
+    id="theme-toggle"
+    aria-label="Toggle theme"
+    class="p-2 rounded-lg bg-primary text-white hover:cursor-pointer hover:rounded-none transition-[border-radius] duration-150"
+  >
+    <svg
+      id="theme-icon-light"
+      class="w-4.5 h-4.5 hidden"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"
+      ></path>
+    </svg>
+    <svg
+      id="theme-icon-dark"
+      class="w-4 h-4 hidden"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+    </svg>
+  </button>
+</div>
+
+<script>
+  const html = document.documentElement;
+  const btn = document.getElementById("theme-toggle");
+  const iconLight = document.getElementById("theme-icon-light");
+  const iconDark = document.getElementById("theme-icon-dark");
+
+  function updateIcon() {
+    const isDark = html.classList.contains("dark");
+    iconLight?.classList.toggle("hidden", !isDark);
+    iconDark?.classList.toggle("hidden", isDark);
+  }
+
+  updateIcon();
+
+  btn?.addEventListener("click", () => {
+    const isDark = html.classList.toggle("dark");
+    html.classList.toggle("light", !isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    updateIcon();
+  });
+</script>

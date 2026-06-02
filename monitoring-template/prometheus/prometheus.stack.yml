@@ -1,0 +1,50 @@
+# Stack-specific Prometheus config.
+#
+# Bind-mounted by the ROOT docker-compose.yml at the repo top level. Tuned
+# for the server-template / web-template duo:
+#   - docker_sd matches container names starting with `${PROJECT_NAME}-server`
+#     and scrapes them on port 3000 (server-template's APP_METRICS_PORT).
+#
+# Standalone monitoring-template (without server/web) uses
+# `prometheus.yml` instead.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: "server"
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+    relabel_configs:
+      # Match `${PROJECT_NAME}-server` and the seed one-shot. Adjust the
+      # regex if your PROJECT_NAME or service name differs.
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(template|monitoring|.+)-server'
+        action: keep
+      - source_labels: [__meta_docker_network_ip]
+        target_label: __address__
+        replacement: '${1}:3000'
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.+)'
+        target_label: instance
+        replacement: '${1}'
+      # Stable job= label that the App Overview dashboard's $app variable
+      # depends on. Without this, every redeploy gets a new instance and
+      # the dashboard drops history.
+      - target_label: job
+        replacement: server
+    metrics_path: /metrics
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: "postgres-exporter"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]

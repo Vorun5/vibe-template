@@ -1,0 +1,70 @@
+{
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/astro.config.mjs": {
+    "mtime": 1780263315.9936345,
+    "hash": "bcbe615b49183ae6880c29e0c60d4653"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/vitest.config.ts": {
+    "mtime": 1780264495.9996233,
+    "hash": "10cb2b5a43872f728654335c76020e05"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/middleware.ts": {
+    "mtime": 1780264359.2817068,
+    "hash": "3b2aa1a7cb902b28ccee51d19146ba38"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/env.d.ts": {
+    "mtime": 1780263340.3035116,
+    "hash": "8d0f428b59ff7e94833e43cbc4260a59"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/tests/security.test.ts": {
+    "mtime": 1780264553.0061977,
+    "hash": "c0d67375b4043dc535236b251f6456cf"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/tests/setup.ts": {
+    "mtime": 1780264498.1125703,
+    "hash": "b14391f088f4139af1956657e2d49b29"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/tests/SearchBar.test.tsx": {
+    "mtime": 1780264613.8304727,
+    "hash": "da55daba768cdd7c598d35c1ce0ea237"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/tests/api.test.ts": {
+    "mtime": 1780264585.2558963,
+    "hash": "5906020ae965711e3c045d1af1b0fcac"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/components/react/SearchBar.tsx": {
+    "mtime": 1780263544.9162278,
+    "hash": "8615a26aeda601bbe4a3e9862c621d69"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/lib/utils.ts": {
+    "mtime": 1780263426.7458858,
+    "hash": "618d00bf4537ce84f9ba62c5b215fb30"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/lib/api.ts": {
+    "mtime": 1780264393.36105,
+    "hash": "28e40889e02d5f2becd7e929a67c048c"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/lib/constants.ts": {
+    "mtime": 1780263428.2779846,
+    "hash": "a4cc26b1b1c74b937053b4a251b9abf1"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/src/lib/security.ts": {
+    "mtime": 1780264304.2030997,
+    "hash": "0914a88c528a3f169d2c87e4aa8e5234"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/README.md": {
+    "mtime": 1780263651.8649852,
+    "hash": "d621661bb1ec950a0049c6af3cdfa414"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/CLAUDE.md": {
+    "mtime": 1780263616.6418853,
+    "hash": "25f3c22df9daccc9465c91015496f48d"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/public/robots.txt": {
+    "mtime": 1780263342.3232906,
+    "hash": "382c179c30e42b277108b44b39dc9bea"
+  },
+  "/Users/firdavsi/Documents/git/fbusta/templates/web-template/public/favicon.svg": {
+    "mtime": 1780263344.330931,
+    "hash": "f7a75eecc3751411cf68fd771ce187eb"
+  }
+}

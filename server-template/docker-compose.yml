@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ${PROJECT_NAME:-server-template}-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${PROJECT_NAME:-server_template}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${DATA_ROOT:-./data}/pgdata:/var/lib/postgresql/data
+    restart: unless-stopped

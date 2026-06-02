@@ -1,0 +1,10 @@
+# Runtime data created by the root docker-compose stack
+data/
+
+# Local environment overrides (NEVER commit — contains GF admin password)
+.env
+.env.local
+
+# OS / editor noise
+.DS_Store
+*.log

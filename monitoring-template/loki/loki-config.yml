@@ -1,0 +1,50 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: "2024-01-01"
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+ingester:
+  chunk_idle_period: 15m
+  chunk_retain_period: 30s
+  chunk_encoding: snappy
+
+# Default = 7 days. Bump to 720h (30d) if you have disk and want longer
+# log history. The `max_query_lookback` must be >= retention_period or
+# old queries silently return nothing.
+limits_config:
+  retention_period: 168h
+  max_query_lookback: 168h
+
+# IMPORTANT: retention requires ALL THREE of:
+#   - retention_enabled: true
+#   - delete_request_store set
+#   - compaction_interval set
+# Without compactor + delete_request_store, retention is silently a no-op
+# and your disk fills up.
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_store: filesystem

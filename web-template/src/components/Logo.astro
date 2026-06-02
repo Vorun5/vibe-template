@@ -1,0 +1,37 @@
+---
+// TODO: replace this placeholder with your own SVG / image logo.
+// Inline SVG keeps it lightweight and avoids an extra HTTP round-trip.
+
+interface Props {
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+
+const SIZE_CLASSES = {
+  sm: "w-8 h-8",
+  md: "w-10 h-10",
+  lg: "w-12 h-12",
+} as const;
+
+const { size = "md", class: className = "" } = Astro.props;
+---
+
+<div class={`${SIZE_CLASSES[size]} ${className}`}>
+  <svg
+    viewBox="0 0 32 32"
+    xmlns="http://www.w3.org/2000/svg"
+    class="w-full h-full"
+    aria-hidden="true"
+  >
+    <rect width="32" height="32" rx="6" fill="var(--primary)"></rect>
+    <text
+      x="50%"
+      y="55%"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      fill="#fff"
+      font-family="system-ui,sans-serif"
+      font-weight="700"
+      font-size="14">W</text>
+  </svg>
+</div>

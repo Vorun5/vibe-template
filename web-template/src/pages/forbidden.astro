@@ -1,0 +1,30 @@
+---
+import Layout from "@/layouts/Layout.astro";
+
+const SITE_NAME = import.meta.env.PUBLIC_SITE_NAME || "Web Template";
+---
+
+<Layout title={`Forbidden — ${SITE_NAME}`} noindex={true}>
+  <div class="flex flex-col items-center justify-center py-24 text-center">
+    <span
+      class="mb-6 flex items-center justify-center w-20 h-20 rounded-full bg-primary text-white text-lg font-bold"
+    >
+      403
+    </span>
+
+    <h1 class="text-2xl font-bold text-text-base mb-3">Forbidden</h1>
+    <p class="text-text-base-muted max-w-sm mb-2 text-md">
+      Your IP address has been blocked by the site administrator.
+    </p>
+    <p class="text-text-base-muted max-w-sm mb-10 text-md">
+      If you think this is a mistake, try disabling your <strong>VPN</strong> or contact support.
+    </p>
+
+    <a href="/" class="no-underline">
+      <span
+        class="block bg-primary text-white! px-4 py-2 text-lg font-medium rounded-[1px] hover:rounded-xl transition-[border-radius] duration-150"
+        >Back home</span
+      >
+    </a>
+  </div>
+</Layout>

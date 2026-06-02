@@ -1,0 +1,81 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import SearchBar from "@/components/react/SearchBar";
+import {
+  getItem,
+  getClientIp,
+  SITE_URL,
+  RateLimitError,
+  ForbiddenError,
+  NotFoundError,
+} from "@/lib/api";
+
+const SITE_NAME = import.meta.env.PUBLIC_SITE_NAME || "Web Template";
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect("/");
+
+const clientIp = getClientIp(Astro);
+
+let item;
+try {
+  item = await getItem(slug, clientIp);
+} catch (e) {
+  if (e instanceof NotFoundError) return Astro.redirect("/");
+  if (e instanceof RateLimitError) {
+    return Astro.redirect(`/rate-limited?retry=${e.retryAfter}`);
+  }
+  if (e instanceof ForbiddenError) return Astro.redirect("/forbidden");
+  return Astro.redirect("/");
+}
+
+const breadcrumbItems = [
+  { name: "Items", href: "/" },
+  { name: item.name, href: `/items/${item.slug}` },
+];
+
+const pageTitle = `${item.name} — ${SITE_NAME}`;
+const pageUrl = `${SITE_URL}/items/${item.slug}`;
+
+const itemSchema = {
+  "@context": "https://schema.org",
+  "@type": "Thing",
+  name: item.name,
+  url: pageUrl,
+};
+---
+
+<Layout title={pageTitle} canonical={pageUrl}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(itemSchema)} />
+  </Fragment>
+
+  <script>
+    const slot = document.getElementById("header-search-slot");
+    const search = document.getElementById("search-bar-source");
+    if (slot && search) {
+      slot.appendChild(search);
+      (search as HTMLElement).style.display = "block";
+    }
+  </script>
+  <div id="search-bar-source" style="display:none">
+    <SearchBar client:load />
+  </div>
+
+  <Breadcrumbs items={breadcrumbItems} />
+
+  <article class="max-w-3xl mx-auto bg-surface border rounded-md p-6">
+    <h1 class="text-2xl font-bold text-text-base mb-3">{item.name}</h1>
+    <dl class="grid grid-cols-2 gap-3 text-sm">
+      <dt class="text-text-base-muted">Slug</dt>
+      <dd class="font-mono">{item.slug}</dd>
+
+      <dt class="text-text-base-muted">Views</dt>
+      <dd>{item.views.toLocaleString()}</dd>
+
+      <dt class="text-text-base-muted">Created</dt>
+      <dd>{new Date(item.createdAt).toLocaleDateString()}</dd>
+    </dl>
+  </article>
+</Layout>

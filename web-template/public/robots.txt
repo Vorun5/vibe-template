@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /rate-limited
+Disallow: /forbidden
+
+# Listing and resource pages are explicitly allowed — they are the primary
+# SEO entry points. Only block error/utility routes here.

@@ -1,0 +1,49 @@
+FROM oven/bun:1 AS builder
+
+WORKDIR /app
+
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+# PUBLIC_* env vars are inlined at build time — they must be passed as
+# build args, not just runtime env.
+ARG API_URL
+ARG API_VERSION=v1
+ARG PUBLIC_API_URL
+ARG PUBLIC_API_VERSION=v1
+ARG PUBLIC_STATIC_URL
+ARG PUBLIC_SITE_URL
+ARG PUBLIC_SITE_NAME
+ARG PUBLIC_SITE_DESCRIPTION
+ARG PUBLIC_OG_IMAGE
+ARG PUBLIC_GA_ID
+
+ENV API_URL=$API_URL
+ENV API_VERSION=$API_VERSION
+ENV PUBLIC_API_URL=$PUBLIC_API_URL
+ENV PUBLIC_API_VERSION=$PUBLIC_API_VERSION
+ENV PUBLIC_STATIC_URL=$PUBLIC_STATIC_URL
+ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
+ENV PUBLIC_SITE_NAME=$PUBLIC_SITE_NAME
+ENV PUBLIC_SITE_DESCRIPTION=$PUBLIC_SITE_DESCRIPTION
+ENV PUBLIC_OG_IMAGE=$PUBLIC_OG_IMAGE
+ENV PUBLIC_GA_ID=$PUBLIC_GA_ID
+
+RUN bun run build
+
+FROM oven/bun:1-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+ENV HOST=0.0.0.0
+ENV PORT=4321
+
+EXPOSE 4321
+
+CMD ["bun", "./dist/server/entry.mjs"]

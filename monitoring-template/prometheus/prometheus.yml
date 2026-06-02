@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # ─────────────────────────────────────────────────────────
+  # Prometheus self-monitoring
+  # ─────────────────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  # ─────────────────────────────────────────────────────────
+  # Your application via Docker service discovery.
+  #
+  # WHY docker_sd_configs?
+  #   Docker Swarm / Dokploy rename containers on every redeploy
+  #   (e.g. `myapp-server-ab12cd`), so any static DNS target would
+  #   break the moment the app is rebuilt. docker_sd_configs lists
+  #   every running container on the host and we filter to ours.
+  #
+  # For plain docker-compose (no Swarm) you can use a static target
+  # instead — see the commented block at the bottom of this file.
+  #
+  # ADAPT BEFORE USE:
+  #   1. The relabel regex `/myapp-.+` must match YOUR container_name
+  #      pattern. With this template's docker-compose, container_name
+  #      starts with `${PROJECT_NAME}-` — replace `myapp` accordingly.
+  #   2. The `:3000` in `__address__` replacement is the in-container
+  #      /metrics port of your app. Replace with APP_METRICS_PORT.
+  #   3. If you use an external network (Dokploy/Swarm), uncomment the
+  #      __meta_docker_network_name `keep` action and set the regex to
+  #      that network name. Without it, docker_sd lists every network
+  #      the container is attached to (and may pick the wrong IP).
+  # ─────────────────────────────────────────────────────────
+  - job_name: "myapp"
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+    relabel_configs:
+      # Keep only containers whose name matches your app.
+      - source_labels: [__meta_docker_container_name]
+        regex: '/myapp-.+'
+        action: keep
+      # Optional: restrict to a specific docker network. Uncomment if
+      # you have multiple networks (e.g. dokploy-network).
+      # - source_labels: [__meta_docker_network_name]
+      #   regex: 'dokploy-network'
+      #   action: keep
+      # Use the container's IP on the selected network + your metrics port.
+      - source_labels: [__meta_docker_network_ip]
+        target_label: __address__
+        replacement: '${1}:3000'
+      # Strip the leading / from container_name for nicer instance labels.
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.+)'
+        target_label: instance
+        replacement: '${1}'
+    metrics_path: /metrics
+
+  # ─────────────────────────────────────────────────────────
+  # Host system metrics
+  # ─────────────────────────────────────────────────────────
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # ─────────────────────────────────────────────────────────
+  # Postgres metrics (optional)
+  # Remove this job AND the postgres-exporter service from
+  # docker-compose.yml AND the postgresql.json dashboard if your
+  # project doesn't use Postgres.
+  # ─────────────────────────────────────────────────────────
+  - job_name: "postgres-exporter"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # ─────────────────────────────────────────────────────────
+  # Static-target example.
+  #
+  # If your container name is stable (e.g. you docker-compose up without
+  # Swarm), drop the docker_sd_configs job above and uncomment this:
+  #
+  # - job_name: "myapp"
+  #   static_configs:
+  #     - targets: ["myapp:3000"]
+  #   metrics_path: /metrics
+  # ─────────────────────────────────────────────────────────

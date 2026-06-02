@@ -1,0 +1,115 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+  preserveParams?: Record<string, string>;
+}
+
+const { currentPage, totalPages, baseUrl, preserveParams = {} } = Astro.props;
+
+if (totalPages <= 1) return;
+
+const getPageUrl = (page: number) => {
+  const url = new URL(baseUrl, "http://localhost");
+  for (const [key, value] of Object.entries(preserveParams)) {
+    if (value) url.searchParams.set(key, value);
+  }
+  if (page > 0) {
+    url.searchParams.set("page", String(page + 1));
+  } else {
+    url.searchParams.delete("page");
+  }
+  return url.pathname + url.search;
+};
+
+const pages: (number | "...")[] = [];
+const delta = 2;
+
+for (let i = 0; i < totalPages; i++) {
+  if (
+    i === 0 ||
+    i === totalPages - 1 ||
+    (i >= currentPage - delta && i <= currentPage + delta)
+  ) {
+    pages.push(i);
+  } else if (pages[pages.length - 1] !== "...") {
+    pages.push("...");
+  }
+}
+---
+
+<nav aria-label="Pagination" class="flex justify-center mt-4 sm:mt-6">
+  <div class="inline-flex items-center gap-1 p-1 rounded-md bg-surface">
+    {
+      currentPage > 0 && (
+        <a
+          href={getPageUrl(currentPage - 1)}
+          class="px-3 py-1.5 text-sm text-primary! hover:bg-surface-muted rounded-sm transition-colors no-underline"
+          aria-label="Previous page"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </a>
+      )
+    }
+
+    {
+      pages.map((page) =>
+        page === "..." ? (
+          <span class="px-2 text-primary text-sm">…</span>
+        ) : (
+          <a
+            href={getPageUrl(page as number)}
+            class={`min-w-8 px-2 py-1.5 text-sm text-center rounded-sm no-underline transition-all ${
+              page === currentPage
+                ? "font-medium bg-primary text-white!"
+                : "text-primary! hover:bg-surface-muted"
+            }`}
+            aria-current={page === currentPage ? "page" : undefined}
+            aria-label={`Page ${(page as number) + 1}`}
+          >
+            {(page as number) + 1}
+          </a>
+        ),
+      )
+    }
+
+    {
+      currentPage < totalPages - 1 && (
+        <a
+          href={getPageUrl(currentPage + 1)}
+          class="px-3 py-1.5 text-sm text-primary! hover:bg-surface-muted rounded-sm transition-colors no-underline"
+          aria-label="Next page"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </a>
+      )
+    }
+  </div>
+</nav>
