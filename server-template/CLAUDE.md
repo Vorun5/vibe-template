@@ -73,7 +73,11 @@ The `.catch(() => {})` is mandatory — an unhandled rejection in fire-and-forge
 1. Direct or proxied IP in `INTERNAL_ALLOWED_IPS`.
 2. `X-Internal-Secret` header equal to `INTERNAL_API_SECRET`.
 
-Either alone is insufficient. The secret is fail-fast: `buildInternalAuthConfig()` throws on boot if it's empty, so an unset secret can't silently expose internal endpoints.
+Either alone is insufficient. Hard rules for this middleware:
+
+- `X-Forwarded-For` is honoured **only** when the direct TCP peer IP is in the explicit `INTERNAL_ALLOWED_IPS` set. Do NOT widen this to "any RFC1918 / private IP" — under Docker port publishing every public client arrives with a private bridge-gateway source IP and would walk past the allowlist by spoofing `XFF: 127.0.0.1`.
+- `buildInternalAuthConfig()` is fail-fast: it throws on boot if `INTERNAL_API_SECRET` is empty **or** equal to any well-known default in `FORBIDDEN_DEFAULT_SECRETS` (`change-me-in-prod`, `password`, …). Never ship a default secret value in `docker-compose.yml`; require it from `.env`.
+- Compare the provided secret with `crypto.timingSafeEqual` after length-checking, never with `===`.
 
 ## IP blocklist
 

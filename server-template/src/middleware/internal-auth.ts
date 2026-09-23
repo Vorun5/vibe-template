@@ -13,6 +13,7 @@
  *                                (default: "127.0.0.1,::1,::ffff:127.0.0.1")
  */
 
+import { timingSafeEqual } from "node:crypto";
 import type { Context, Next } from "hono";
 import { getConnInfo } from "hono/bun";
 import { normalizeIp } from "@/utils/get-client-ip";
@@ -22,6 +23,17 @@ export interface InternalAuthConfig {
   allowedIps: Set<string>;
 }
 
+// Well-known default values shipped in the template — refuse to boot with any
+// of these so a forgotten `.env` can't silently expose /internal/* to anyone
+// who has read the repo.
+const FORBIDDEN_DEFAULT_SECRETS = new Set<string>([
+  "change-me-in-prod",
+  "change-me",
+  "changeme",
+  "secret",
+  "password",
+]);
+
 function getDirectIp(c: Context): string {
   try {
     return normalizeIp(getConnInfo(c).remote.address ?? "unknown");
@@ -30,38 +42,35 @@ function getDirectIp(c: Context): string {
   }
 }
 
-function isPrivateIp(ip: string): boolean {
-  const clean = ip.replace(/^::ffff:/, "");
-  return (
-    clean === "127.0.0.1" ||
-    clean === "::1" ||
-    clean.startsWith("10.") ||
-    clean.startsWith("192.168.") ||
-    (clean.startsWith("172.") &&
-      (() => {
-        const second = parseInt(clean.split(".")[1] ?? "0", 10);
-        return second >= 16 && second <= 31;
-      })())
-  );
-}
-
 /**
  * Resolve the effective caller IP.
  *
- * Direct connection from allowed/private IP → trusted, check X-Forwarded-For
- * so that requests routed through a reverse proxy are authenticated by the
- * real upstream IP.
- * Direct connection from unknown public IP → use it as-is (no proxy involved).
+ * Trust `X-Forwarded-For` ONLY when the direct TCP peer is in the explicit
+ * `INTERNAL_ALLOWED_IPS` set (i.e. a known reverse proxy). We intentionally
+ * do NOT trust the header just because the direct peer is in an RFC1918
+ * range — under Docker port publishing every public client arrives with a
+ * private bridge-gateway source IP, which would let any unauthenticated
+ * caller spoof a localhost source and walk straight past the allowlist.
+ *
+ * For all other direct peers (including private IPs that aren't on the
+ * allowlist), use the direct connection IP as-is.
  */
 function resolveCallerIp(c: Context, allowedIps: Set<string>): string {
   const directIp = getDirectIp(c);
 
-  if (allowedIps.has(directIp) || isPrivateIp(directIp)) {
+  if (allowedIps.has(directIp)) {
     const forwarded = c.req.header("x-forwarded-for");
     if (forwarded) return normalizeIp(forwarded.split(",")[0]!.trim());
   }
 
   return directIp;
+}
+
+function secretsEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 export function buildInternalAuthConfig(): InternalAuthConfig {
@@ -71,6 +80,12 @@ export function buildInternalAuthConfig(): InternalAuthConfig {
   if (!secret) {
     throw new Error(
       "INTERNAL_API_SECRET environment variable is required for internal auth",
+    );
+  }
+  if (FORBIDDEN_DEFAULT_SECRETS.has(secret.toLowerCase())) {
+    throw new Error(
+      `INTERNAL_API_SECRET is set to a well-known default value (${secret}). ` +
+        "Generate a unique secret (e.g. `openssl rand -hex 32`) before booting.",
     );
   }
 
@@ -105,10 +120,10 @@ export function createInternalAuth(cfg: InternalAuthConfig) {
       );
     }
 
-    // Layer 2: Shared secret validation
+    // Layer 2: Shared secret validation (constant-time)
     const providedSecret = c.req.header("X-Internal-Secret");
 
-    if (!providedSecret || providedSecret !== cfg.secret) {
+    if (!providedSecret || !secretsEqual(providedSecret, cfg.secret)) {
       return c.json(
         {
           error: "Unauthorized",

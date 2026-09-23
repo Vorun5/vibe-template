@@ -17,7 +17,8 @@
 # change.
 #
 # Usage:
-#   cp .env.example .env        # set GF_SECURITY_ADMIN_PASSWORD
+#   cp .env.example .env        # set GF_SECURITY_ADMIN_PASSWORD,
+#                               #     POSTGRES_PASSWORD, INTERNAL_API_SECRET
 #   docker compose up -d --build
 #   docker compose run --rm seed
 #
@@ -34,10 +35,13 @@ services:
     container_name: ${PROJECT_NAME:-template}-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — set it in .env}
       POSTGRES_DB: server_template
+    # Bind to loopback only — Postgres should never be reachable from the
+    # public internet. Other compose services reach it via the internal
+    # network on port 5432 regardless of this host-side binding.
     ports:
-      - "${POSTGRES_HOST_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - ./data/pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -65,7 +69,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/server_template
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — set it in .env}@postgres:5432/server_template
     command: ["bun", "run", "src/db/seed.ts"]
     restart: "no"
 
@@ -80,11 +84,11 @@ services:
       seed:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/server_template
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — set it in .env}@postgres:5432/server_template
       PORT: "3000"
       DATA_ROOT: /app/data
-      INTERNAL_API_SECRET: change-me-in-prod
-      INTERNAL_ALLOWED_IPS: 127.0.0.1,::1,::ffff:127.0.0.1
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?INTERNAL_API_SECRET is required — set it in .env (e.g. `openssl rand -hex 32`)}
+      INTERNAL_ALLOWED_IPS: ${INTERNAL_ALLOWED_IPS:-127.0.0.1,::1,::ffff:127.0.0.1}
       LOKI_APP_NAME: server
       LOKI_URL: http://loki:3100
       RATE_LIMIT_ENABLED: "false"
@@ -129,8 +133,10 @@ services:
     container_name: ${PROJECT_NAME:-template}-prometheus
     restart: unless-stopped
     user: root
+    # Prometheus ships with no authentication and exposes --web.enable-lifecycle.
+    # Bind to loopback so it's only reachable via an SSH tunnel or local Grafana.
     ports:
-      - "${PROMETHEUS_HOST_PORT:-9090}:9090"
+      - "127.0.0.1:${PROMETHEUS_HOST_PORT:-9090}:9090"
     volumes:
       - prometheus-data:/prometheus
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -165,8 +171,11 @@ services:
     build: ./monitoring-template/loki
     container_name: ${PROJECT_NAME:-template}-loki
     restart: unless-stopped
+    # Loki runs with auth_enabled=false and supports a delete API. Keep the
+    # host-side port on loopback only; in-cluster scrapers reach it via the
+    # internal network.
     ports:
-      - "${LOKI_HOST_PORT:-3100}:3100"
+      - "127.0.0.1:${LOKI_HOST_PORT:-3100}:3100"
     volumes:
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml
@@ -186,7 +195,7 @@ services:
     container_name: ${PROJECT_NAME:-template}-node-exporter
     restart: unless-stopped
     ports:
-      - "${NODE_EXPORTER_HOST_PORT:-9100}:9100"
+      - "127.0.0.1:${NODE_EXPORTER_HOST_PORT:-9100}:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -202,9 +211,9 @@ services:
     container_name: ${PROJECT_NAME:-template}-postgres-exporter
     restart: unless-stopped
     ports:
-      - "${POSTGRES_EXPORTER_HOST_PORT:-9187}:9187"
+      - "127.0.0.1:${POSTGRES_EXPORTER_HOST_PORT:-9187}:9187"
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/server_template?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — set it in .env}@postgres:5432/server_template?sslmode=disable
     depends_on:
       - postgres
 
